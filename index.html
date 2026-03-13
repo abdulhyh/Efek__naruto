@@ -8,8 +8,14 @@
   <style>
     body { margin: 0; background: black; overflow: hidden; }
     #v_src { position: fixed; width: 100vw; height: 100vh; object-fit: cover; transform: scaleX(-1); }
-    /* Pastikan z-index video efek lebih tinggi dari kamera */
-    .fx { position: absolute; width: 250px; pointer-events: none; mix-blend-mode: screen; z-index: 100; }
+    /* Efek video dengan z-index tinggi agar selalu di depan */
+    .fx { 
+        position: absolute; 
+        width: 300px; 
+        pointer-events: none; 
+        mix-blend-mode: screen; 
+        z-index: 9999; 
+    }
   </style>
 </head>
 <body>
@@ -19,20 +25,31 @@
   <script>
     const v = document.getElementById('v_src');
     const n = document.getElementById('n');
-    const h = new Hands({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
     
+    // Inisialisasi Hand Tracking
+    const h = new Hands({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
     h.setOptions({ maxNumHands: 1, minDetectionConfidence: 0.5 });
+    
     h.onResults((res) => {
-      n.style.display = 'none';
       if (res.multiHandLandmarks && res.multiHandLandmarks.length > 0) {
-        // Menggunakan titik 9 (buku jari tengah) agar lebih akurat
-        const pt = res.multiHandLandmarks[0][9]; 
-        n.style.left = ((1 - pt.x) * window.innerWidth) + 'px';
-        n.style.top = (pt.y * window.innerHeight) + 'px';
+        const pt = res.multiHandLandmarks[0][9]; // Titik buku jari tengah
+        // Hitung posisi
+        const x = (1 - pt.x) * window.innerWidth;
+        const y = pt.y * window.innerHeight;
+        
+        n.style.left = x + 'px';
+        n.style.top = y + 'px';
         n.style.display = 'block';
+      } else {
+        n.style.display = 'none';
       }
     });
-    new Camera(v, { onFrame: async () => { await h.send({ image: v }); }, width: 640, height: 480 }).start();
+
+    const cam = new Camera(v, {
+      onFrame: async () => { await h.send({ image: v }); },
+      width: 640, height: 480
+    });
+    cam.start();
   </script>
 </body>
 </html>
